@@ -91,6 +91,7 @@ For other environments, use dedicated files (for example):
 Each environment **must** have:
 
 - Its own `DATABASE_URL` and `STORAGE_ROOT_PATH` (no sharing between local/dev/uat/prod).
+- Server runtimes that use ApsaraDB RDS: follow [docs/MIGRATE-TO-APSARA-DB.md](docs/MIGRATE-TO-APSARA-DB.md) (Dev first, then Prod).
 - Strong, unique `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `JWT_ADMIN_SECRET` (do not reuse `env.example` placeholders).
 
 ### 6. Start Development
