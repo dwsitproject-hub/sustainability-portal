@@ -26,7 +26,8 @@ Use this checklist before deploying.
 
 | Variable | Required | Notes |
 |----------|----------|--------|
-| `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Yes | Postgres |
+| `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Yes | Local Docker Postgres (default) |
+| `DATABASE_URL` | If using ApsaraDB | Full URL including `sslmode`. See [MIGRATE-TO-APSARA-DB.md](./MIGRATE-TO-APSARA-DB.md) |
 | `REDIS_PASSWORD` | Yes | Redis auth |
 | `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ADMIN_SECRET` | Yes | Use strong values (e.g. `openssl rand -base64 64`) |
 | `CORS_ORIGIN` | Yes | Frontend origin, e.g. `http://FRONTEND_IP:8000` |
@@ -399,9 +400,9 @@ When you have a domain:
 
 | Problem | What to check |
 |--------|----------------|
-| **Connection timeout to DB** (pgAdmin/DBeaver) | Timeout = network/firewall, not wrong password. (1) On backend server: `docker compose -f infra/docker-compose.prod.backend.yml ps` — postgres must be Up. (2) Port: prod uses `POSTGRES_PORT` from backend `.env` (example: **5000**). (3) Firewall/security group must allow **your client IP** (where pgAdmin runs) to backend **TCP port 5000** (or 5432 if you didn’t set `POSTGRES_PORT`). (4) If you’re outside the VPC: use backend **public IP** and open that port for your IP, or use **SSH tunnel**: `ssh -L 5000:172.28.80.51:5000 user@<backend-public-ip>` then in pgAdmin use Host `localhost`, Port `5000`. |
-| API container exits | `docker compose -f infra/docker-compose.prod.backend.yml logs api`. Check `DATABASE_URL`, `REDIS_*`, `JWT_*`, `MINIO_*` in `infra/.env`. |
-| Migrations fail | `docker compose -f infra/docker-compose.prod.backend.yml exec api npx prisma migrate status`. Ensure Postgres is up and `DB_*` correct. |
+| **Connection timeout to DB** (pgAdmin/DBeaver) | Timeout = network/firewall, not wrong password. **Local Docker Postgres:** (1) `docker compose -f infra/docker-compose.prod.backend.yml ps` — postgres must be Up. (2) Port: `POSTGRES_PORT` (example: **5000**). (3) Security group must allow your client IP to that port. (4) Outside the VPC: SSH tunnel `ssh -L 5000:BACKEND_PRIVATE_IP:5000 user@<backend-public-ip>`. **ApsaraDB:** connect to the RDS internal/public endpoint; whitelist your IP. See [MIGRATE-TO-APSARA-DB.md](./MIGRATE-TO-APSARA-DB.md). |
+| API container exits | `docker compose -f infra/docker-compose.prod.backend.yml logs api`. Check `DATABASE_URL` (or `DB_HOST` / `DB_*`), `REDIS_*`, `JWT_*` in the backend env file. |
+| Migrations fail | `docker compose -f infra/docker-compose.prod.backend.yml exec api npx prisma migrate status`. Ensure the target DB (local Postgres or ApsaraDB) is reachable and `DATABASE_URL` is correct. |
 | Frontend cannot reach API | From frontend server: `curl -s http://BACKEND_IP:8001/api/v1/health`. Open port 8001 from frontend to backend. |
 | Login does not redirect | Frontend must have `API_BACKEND_URL=http://BACKEND_IP:8001` so the login route and proxy work. Rebuild frontend after changing: `docker compose -f infra/docker-compose.prod.frontend.yml up -d --build`. |
 | CORS errors in browser | Backend `CORS_ORIGIN` must exactly match the URL in the address bar (e.g. `http://FRONTEND_IP:8000`). |

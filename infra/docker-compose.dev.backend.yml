@@ -9,6 +9,10 @@
 # Env: infra/.env.be.dev or infra/.env (DB_PASSWORD, REDIS_PASSWORD, JWT_SECRET, CORS_ORIGIN, …).
 # Document files: bind mount STORAGE_HOST_PATH → /app/storage (see STORAGE_ROOT_PATH).
 # Project name isolates volumes from prod on the same host.
+#
+# Database: default is local Docker Postgres. To use ApsaraDB, set DATABASE_URL (see
+# docs/MIGRATE-TO-APSARA-DB.md). After cutover, start only redis+api (`up -d redis api`);
+# a bare `up -d` starts the local postgres service again.
 
 name: slms-dev-backend
 
@@ -62,8 +66,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: ${API_PORT:-3001}
-      DATABASE_URL: postgresql://${DB_USER:-slms}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-slms}?schema=public
-      DB_HOST: postgres
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${DB_USER:-slms}:${DB_PASSWORD}@${DB_HOST:-postgres}:${DB_PORT:-5432}/${DB_NAME:-slms}?schema=public}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
       DB_USERNAME: ${DB_USER:-slms}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: ${DB_NAME:-slms}
@@ -89,8 +94,6 @@ services:
     volumes:
       - ${STORAGE_HOST_PATH:-./data/storage}:/app/storage:rw
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     deploy:

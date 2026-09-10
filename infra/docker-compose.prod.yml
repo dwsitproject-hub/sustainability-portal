@@ -10,6 +10,8 @@
 #   DB_USER, DB_PASSWORD, DB_NAME, REDIS_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET, JWT_ADMIN_SECRET
 #   API_URL (public URL for API), CORS_ORIGIN, STORAGE_HOST_PATH
 # Optional: CMS_URL, SMTP_*, WEB_URL, API_PUBLIC_BASE_URL, COOKIE_DOMAIN
+# External DB: set DATABASE_URL for ApsaraDB (docs/MIGRATE-TO-APSARA-DB.md). After cutover
+# use `up -d redis api web` so local postgres is not started again.
 
 name: slms-prod-all
 
@@ -67,7 +69,9 @@ services:
       NODE_ENV: production
       PORT: 3001
       API_PREFIX: api/v1
-      DATABASE_URL: postgresql://${DB_USER:-slms}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-slms}?schema=public
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${DB_USER:-slms}:${DB_PASSWORD}@${DB_HOST:-postgres}:${DB_PORT:-5432}/${DB_NAME:-slms}?schema=public}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -103,8 +107,6 @@ services:
     volumes:
       - ${STORAGE_HOST_PATH:-./data/storage}:/app/storage:rw
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:

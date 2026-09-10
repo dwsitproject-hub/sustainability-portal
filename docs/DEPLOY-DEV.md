@@ -5,6 +5,8 @@ Two-server layout:
 - **172.28.92.56** – Frontend (Next.js) – *private* IP
 - **172.28.92.57** – Backend (API), PostgreSQL, Redis – *private* IP
 
+To move Postgres off this host onto ApsaraDB RDS (PostgreSQL 18), follow **[MIGRATE-TO-APSARA-DB.md](./MIGRATE-TO-APSARA-DB.md)**. Redis and document storage stay on the backend server.
+
 Docker and images are already set up. This guide covers env, migrations, seeding, and optional items you might have missed.
 
 ---

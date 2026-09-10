@@ -4,9 +4,11 @@
 # Development backend: ./infra/up-dev-backend.sh (docker-compose.dev.backend.yml).
 #
 # Usage (from repo root):
-#   ./infra/up-prod-backend.sh up -d --build
-#   ./infra/up-prod-backend.sh up -d --build api
+#   ./infra/up-prod-backend.sh up -d --build        # first start (includes local Postgres)
+#   ./infra/up-prod-backend.sh up -d --build api    # routine API rebuild (does not start Postgres)
+#   ./infra/up-prod-backend.sh up -d redis api      # after ApsaraDB cutover
 #   ./infra/up-prod-backend.sh down
+# See docs/MIGRATE-TO-APSARA-DB.md
 #
 # Routine deploy: use up -d --build (Docker reuses cached layers when possible).
 # Use build --no-cache only when troubleshooting stale cache or dependency issues.

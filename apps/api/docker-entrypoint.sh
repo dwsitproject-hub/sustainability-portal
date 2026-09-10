@@ -11,14 +11,16 @@ if [ -f /etc/alpine-release ]; then
 fi
 echo "Running database migrations..."
 attempt=1
-max_attempts=30
+# Retries cover local Docker Postgres coming up in parallel (API no longer depends_on postgres)
+# and brief ApsaraDB network delays.
+max_attempts=45
 while [ "$attempt" -le "$max_attempts" ]; do
   if npx prisma migrate deploy; then
     echo "Migrations applied successfully."
     break
   fi
   if [ "$attempt" -eq "$max_attempts" ]; then
-    echo "Error: could not reach database at ${DB_HOST:-postgres}:5432 after $max_attempts attempts."
+    echo "Error: could not run prisma migrate deploy after $max_attempts attempts. Check DATABASE_URL (host ${DB_HOST:-unknown}:${DB_PORT:-5432})."
     exit 1
   fi
   echo "Database not reachable (attempt $attempt/$max_attempts), retrying in 2s..."
