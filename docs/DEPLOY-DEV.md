@@ -60,12 +60,9 @@ JWT_ADMIN_SECRET=<long-random-secret>
 # Use the URL users actually use in the browser (frontend public IP or domain)
 CORS_ORIGIN=http://<frontend-public-ip>:3000
 
-# Optional: MinIO (if you run MinIO on this host or elsewhere)
-# MINIO_ACCESS_KEY=...
-# MINIO_SECRET_KEY=...
-# MINIO_ENDPOINT=minio
-# MINIO_BUCKET=slms-docs
-# If using Alibaba OSS instead, configure STORAGE_* in the API service or a separate env file.
+# Document storage (Synology NFS/SMB mount or local folder)
+STORAGE_HOST_PATH=/mnt/nas/dev/SUSTAINABILITY-PORTAL
+STORAGE_ROOT_PATH=/app/storage
 ```
 
 Generate secrets:
@@ -427,13 +424,13 @@ To set a new password for the `slms` DB user so it matches `infra/.env`:
 
 `prisma db seed` is idempotent (upserts). Run it once per environment. Re-running is safe. Do **not** run it from a cron; run manually after deploy or as part of a release script.
 
-### 4.5 Object storage (MinIO vs OSS)
+### 4.5 Document storage (filesystem / Synology)
 
-- **docker-compose.dev.backend.yml** now includes **MinIO** and **minio-init** (creates bucket `slms-docs`). File upload in the admin (e.g. policies, licenses, certifications) will work after `docker compose -f infra/docker-compose.dev.backend.yml up -d`; the API uses `MINIO_ENDPOINT=minio` and the default bucket. If you see **"Upload to storage failed"**, ensure the MinIO and minio-init services are running (`docker compose ... ps`) and that the API started after them.
-- **Document download ("File wasn't available on site"):** The API must return file URLs that the **browser** can reach. Set **`API_PUBLIC_BASE_URL`** in backend `infra/.env` to the base URL the browser uses to call the API (no trailing slash). When using the **Next.js proxy** (frontend `API_URL=/api/v1`, `API_BACKEND_URL=http://172.28.92.57:3001`), set **`API_PUBLIC_BASE_URL=http://172.28.92.56:3000/api/v1`** (or your frontend origin + `/api/v1`). Then document download links point to the same origin, the proxy forwards to the API, and the API streams the file from MinIO. Restart the API after changing: `docker compose -f infra/docker-compose.dev.backend.yml up -d api`.
-- **Option A (default):** Use the included MinIO; no extra config needed. Optional: set `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` in `infra/.env` to override defaults.
-- **Option B**: Use **Alibaba Cloud OSS**. Set in API env (or infra `.env` if you pass it through):  
-  `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY_ID`, `STORAGE_ACCESS_KEY_SECRET`, `STORAGE_REGION`, and optionally `STORAGE_BASE_URL`. See `infra/env.example` comments.
+The API stores files on a bind-mounted folder (`STORAGE_HOST_PATH` → `/app/storage`). It does **not** use MinIO or OSS.
+
+- Mount the NAS (or a local folder) on the backend host, set `STORAGE_HOST_PATH` and `STORAGE_ROOT_PATH=/app/storage` in `infra/.env.be.dev`, then recreate the API: `./infra/up-dev-backend.sh up -d api`.
+- If you see **"Upload to storage failed"**, the mount is missing, empty, or not writable by container user `node` (uid 1000).
+- **Document download:** Set **`API_PUBLIC_BASE_URL`** so the browser can reach file URLs. When using the Next.js proxy (`API_URL=/api/v1`, `API_BACKEND_URL=http://172.28.92.57:3001`), set `API_PUBLIC_BASE_URL=http://172.28.92.56:3000/api/v1`. Restart the API after changing.
 
 ### 4.6 Frontend env is build-time
 
