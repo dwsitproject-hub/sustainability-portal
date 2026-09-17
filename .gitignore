@@ -61,6 +61,11 @@ pids/
 *.sql.gz
 backups/
 
+# Local ops runbooks (keep on laptop/server; do not publish)
+docs/DEPLOY-DEV.md
+docs/MIGRATE-TO-APSARA-DB.md
+docs/PROD_DEPLOY_STEPS.md
+
 # Misc
 .turbo/
 .vercel/

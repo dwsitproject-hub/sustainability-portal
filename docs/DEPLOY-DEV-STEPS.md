@@ -209,4 +209,4 @@ For a more aggressive cleanup (removes all unused images; next deploy will re-pu
 
 ---
 
-For more detail (env vars, security groups, troubleshooting), see [DEPLOY-DEV.md](./DEPLOY-DEV.md).
+For more detail (env vars, security groups, troubleshooting), see the local `docs/DEPLOY-DEV.md` runbook (not tracked in git).
