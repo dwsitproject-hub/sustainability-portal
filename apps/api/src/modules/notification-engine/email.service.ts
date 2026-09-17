@@ -22,24 +22,31 @@ export class EmailService {
   }
 
   private createTransporter(): void {
-    const host = this.configService.get('SMTP_HOST', 'localhost');
-    const port = this.configService.get('SMTP_PORT', 1025);
+    const host = String(this.configService.get('SMTP_HOST', '') ?? '').trim();
+    const port = Number(this.configService.get('SMTP_PORT', 587));
     const secure = this.configService.get('SMTP_SECURE', 'false') === 'true';
     const user = this.configService.get('SMTP_USER', '');
     const pass = this.configService.get('SMTP_PASS', '');
 
+    if (!host) {
+      this.logger.warn(
+        'SMTP_HOST is not set. Password-reset and verification emails will fail until SMTP is configured.',
+      );
+    }
+
     this.transporter = nodemailer.createTransport({
-      host,
-      port,
+      host: host || 'localhost',
+      port: Number.isFinite(port) ? port : 587,
       secure,
       auth: user && pass ? { user, pass } : undefined,
-      // For Mailhog, no auth is needed
       connectionTimeout: this.configService.get<number>('SMTP_TIMEOUT_MS', 10000),
       greetingTimeout: this.configService.get<number>('SMTP_GREETING_TIMEOUT_MS', 10000),
       socketTimeout: this.configService.get<number>('SMTP_SOCKET_TIMEOUT_MS', 20000),
     });
 
-    this.logger.log(`Email transporter configured: ${host}:${port}`);
+    this.logger.log(
+      `Email transporter configured: ${host || 'localhost'}:${Number.isFinite(port) ? port : 587}`,
+    );
   }
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
@@ -65,7 +72,11 @@ export class EmailService {
       this.logger.log(`Email sent successfully (messageId: ${result.messageId})`);
       return true;
     } catch (error) {
-      this.logger.error('Failed to send email', error);
+      const err = error as Error;
+      this.logger.error(
+        `Failed to send email to ${Array.isArray(options.to) ? options.to.join(', ') : options.to}: ${err?.message ?? error}`,
+        err?.stack,
+      );
       return false;
     }
   }
