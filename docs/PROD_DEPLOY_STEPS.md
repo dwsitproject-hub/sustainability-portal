@@ -27,7 +27,7 @@ Use this checklist before deploying.
 | Variable | Required | Notes |
 |----------|----------|--------|
 | `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Yes | Local Docker Postgres (default) |
-| `DATABASE_URL` | If using ApsaraDB | Full URL including `sslmode`. See [MIGRATE-TO-APSARA-DB.md](./MIGRATE-TO-APSARA-DB.md) |
+| `DATABASE_URL` | If using ApsaraDB | Full URL including `sslmode` |
 | `REDIS_PASSWORD` | Yes | Redis auth |
 | `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ADMIN_SECRET` | Yes | Use strong values (e.g. `openssl rand -base64 64`) |
 | `CORS_ORIGIN` | Yes | Frontend origin, e.g. `http://FRONTEND_IP:8000` |
@@ -399,7 +399,7 @@ When you have a domain:
 
 | Problem | What to check |
 |--------|----------------|
-| **Connection timeout to DB** (pgAdmin/DBeaver) | Timeout = network/firewall, not wrong password. **Local Docker Postgres:** (1) `docker compose -f infra/docker-compose.prod.backend.yml ps` — postgres must be Up. (2) Port: `POSTGRES_PORT` (example: **5000**). (3) Security group must allow your client IP to that port. (4) Outside the VPC: SSH tunnel `ssh -L 5000:BACKEND_PRIVATE_IP:5000 user@<backend-public-ip>`. **ApsaraDB:** connect to the RDS internal/public endpoint; whitelist your IP. See [MIGRATE-TO-APSARA-DB.md](./MIGRATE-TO-APSARA-DB.md). |
+| **Connection timeout to DB** (pgAdmin/DBeaver) | Timeout = network/firewall, not wrong password. **Local Docker Postgres:** (1) `docker compose -f infra/docker-compose.prod.backend.yml ps` — postgres must be Up. (2) Port: `POSTGRES_PORT` (example: **5000**). (3) Security group must allow your client IP to that port. (4) Outside the VPC: SSH tunnel `ssh -L 5000:BACKEND_PRIVATE_IP:5000 user@<backend-public-ip>`. **ApsaraDB:** connect to the RDS internal/public endpoint; whitelist your IP. |
 | API container exits | `docker compose -f infra/docker-compose.prod.backend.yml logs api`. Check `DATABASE_URL` (or `DB_HOST` / `DB_*`), `REDIS_*`, `JWT_*` in the backend env file. |
 | Migrations fail | `docker compose -f infra/docker-compose.prod.backend.yml exec api npx prisma migrate status`. Ensure the target DB (local Postgres or ApsaraDB) is reachable and `DATABASE_URL` is correct. |
 | Frontend cannot reach API | From frontend server: `curl -s http://BACKEND_IP:8001/api/v1/health`. Open port 8001 from frontend to backend. |
