@@ -17,7 +17,7 @@ Use this checklist before deploying.
 
 | Item | Status | Notes |
 |------|--------|--------|
-| `infra/docker-compose.prod.backend.yml` | ✅ | Backend: Postgres (host 5000), Redis, MinIO, API on port **8001** |
+| `infra/docker-compose.prod.backend.yml` | ✅ | Backend: Postgres (host 5000), Redis, API on port **8001**; files on Synology mount |
 | `infra/docker-compose.prod.frontend.yml` | ✅ | Frontend: Next.js on port **8000** |
 | `infra/env.example.backend` | ✅ | Copy to `.env` on **backend** server |
 | `infra/env.example.frontend` | ✅ | Copy to `.env` on **frontend** server |
@@ -31,7 +31,7 @@ Use this checklist before deploying.
 | `REDIS_PASSWORD` | Yes | Redis auth |
 | `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ADMIN_SECRET` | Yes | Use strong values (e.g. `openssl rand -base64 64`) |
 | `CORS_ORIGIN` | Yes | Frontend origin, e.g. `http://FRONTEND_IP:8000` |
-| `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` | Yes | Use strong values in prod |
+| `STORAGE_HOST_PATH`, `STORAGE_ROOT_PATH` | Yes | Synology/NFS mount → `/app/storage` |
 | `POSTGRES_PORT` | Optional | Default 5000 |
 
 ### 1.3 Frontend env (env.example.frontend)
@@ -49,7 +49,6 @@ Use this checklist before deploying.
 | **8001** | API (NestJS) | Backend server | Open from **frontend server IP** only (or same host if single-server) |
 | 5000 | Postgres | Backend server | Optional; usually internal only |
 | 6379 | Redis | Backend server | Internal only |
-| 9000 / 9001 | MinIO | Backend server | Internal only |
 
 ### 1.5 Application behaviour
 
@@ -146,7 +145,7 @@ Edit these (replace placeholders with real values and your **frontend** server I
 - `JWT_REFRESH_SECRET=...` → strong secret
 - `JWT_ADMIN_SECRET=...` → strong secret
 - `CORS_ORIGIN=http://YOUR_FRONTEND_SERVER_IP:8000` → e.g. `http://192.168.1.10:8000`
-- `MINIO_ACCESS_KEY=...` and `MINIO_SECRET_KEY=...` → strong values
+- `STORAGE_HOST_PATH=/mnt/nas/slms-docs` and `STORAGE_ROOT_PATH=/app/storage`
 
 Save and exit (in nano: Ctrl+O, Enter, Ctrl+X).
 
@@ -339,7 +338,7 @@ If you run from inside `infra/`, the path must not include `infra/`:
 ```bash
 cd /path/to/sustainability-portal
 cp infra/env.example.backend infra/env.prod.backend
-# Edit infra/env.prod.backend (DB_*, REDIS_*, JWT_*, CORS_ORIGIN, MINIO_*)
+# Edit infra/env.prod.backend (DB_*, REDIS_*, JWT_*, CORS_ORIGIN, STORAGE_*)
 chmod +x infra/up-prod-backend.sh
 ./infra/up-prod-backend.sh up -d --build
 ./infra/up-prod-backend.sh logs api --tail 50

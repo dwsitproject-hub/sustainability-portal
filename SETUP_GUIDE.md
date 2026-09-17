@@ -8,7 +8,6 @@
 - ✅ Docker infrastructure running:
   - PostgreSQL (port 5544)
   - Redis (port 6379)
-  - MinIO (ports 9000, 9001)
   - Mailhog (ports 8025, 1025)
 - ✅ Environment files exist (api, web)
 - ✅ Database connection verified
@@ -76,7 +75,6 @@ This starts:
 | **API Swagger** | http://localhost:3001/docs | API documentation |
 | **API Endpoint** | http://localhost:3001/api/v1 | REST API |
 | **Strapi Admin** | http://localhost:1337/admin | CMS admin panel |
-| **MinIO Console** | http://localhost:9001 | Object storage UI (minioadmin/minioadmin) |
 | **Mailhog** | http://localhost:8025 | Email testing UI |
 
 ## 🔧 Quick Commands

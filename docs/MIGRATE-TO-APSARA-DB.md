@@ -111,23 +111,30 @@ Prod:
 
 Connect to the still-running Docker Postgres on the **host** port. Do not `exec pg_dump` inside the `postgres:16` container.
 
+Do **not** `source` / `. infra/.env`. Compose env files are not shell syntax; `&`, `$`, `#`, or `@` in passwords will run as commands.
+
+Read DB credentials from the **running** Postgres container instead:
+
 ```bash
-# Load DB_PASSWORD from the same env file the stack uses
-set -a
-# Dev: infra/.env or infra/.env.be.dev
-# Prod: infra/env.prod.backend
-. infra/.env
-set +a
+# Dev — from /opt/slmsBE (or repo root)
+DB_USER=$(./infra/up-dev-backend.sh exec -T postgres printenv POSTGRES_USER)
+DB_NAME=$(./infra/up-dev-backend.sh exec -T postgres printenv POSTGRES_DB)
+DB_PASSWORD=$(./infra/up-dev-backend.sh exec -T postgres printenv POSTGRES_PASSWORD)
 
-DUMP=/tmp/slms-$(date +%Y%m%d).dump
+# Prod: use ./infra/up-prod-backend.sh instead of up-dev-backend.sh
 
+DUMP=/tmp/slms.dump
+
+# Host port: Dev usually 5432, Prod usually 5000. Confirm with: ss -lntp | grep 5432
 docker run --rm --network host \
   -e PGPASSWORD="$DB_PASSWORD" \
   -v /tmp:/dump \
   postgres:18 \
-  pg_dump -h 127.0.0.1 -p "${POSTGRES_PORT:-5432}" -U "${DB_USER:-slms}" -d "${DB_NAME:-slms}" \
+  pg_dump -h 127.0.0.1 -p 5432 -U "$DB_USER" -d "$DB_NAME" \
   -Fc --no-owner --no-acl --no-tablespaces --quote-all-identifiers \
-  -f /dump/$(basename "$DUMP")
+  -f /dump/slms.dump
+
+ls -lh /tmp/slms.dump
 ```
 
 `--quote-all-identifiers` reduces reserved-word surprises between 16 and 18. `--no-owner --no-acl --no-tablespaces` is required because RDS accounts are not superusers.
@@ -137,9 +144,12 @@ docker run --rm --network host \
 Target database must be **empty** (no prior `prisma migrate deploy`). Enable `pgcrypto` first (section 1.3).
 
 ```bash
+# Confirm the dump exists first. Do not use $DUMP if you opened a new shell.
+ls -lh /tmp/slms.dump
+
 docker run --rm --network host \
   -e PGPASSWORD="$APSARA_PASSWORD" \
-  -v "$DUMP:/tmp/slms.dump:ro" \
+  -v /tmp/slms.dump:/tmp/slms.dump:ro \
   postgres:18 \
   pg_restore -h "$RDS_INTERNAL_HOST" -p 5432 -U "$APSARA_USER" -d slms \
   --no-owner --no-acl --no-tablespaces --single-transaction \
@@ -264,6 +274,7 @@ Rollback is **switch the API back to the untouched Docker PostgreSQL 16 volume**
 | `pgcrypto` / `digest` errors | Extension not created on the empty target before restore, or restore skipped it. |
 | API cannot reach DB / whitelist timeout | Backend private IP not on the RDS whitelist, or using the public endpoint from inside the VPC. |
 | SSL / `pg_hba` / certificate errors | Add `sslmode=require` (or verify-ca) to `DATABASE_URL`. |
+| `command not found` / `&` / `email` after `. infra/.env` | Do not source the env file. `&` in `SMTP_PASS` or other values is executed as a background job. Read `POSTGRES_*` from the running container instead. |
 | Prisma P1000 / password auth failed | Password not URL-encoded in `DATABASE_URL`, or env file truncated at `#` / `@`. |
 | `prisma migrate deploy` reapplies or fails after restore | Target was not empty, or `_prisma_migrations` was omitted. Drop/recreate the ApsaraDB database and restore again. |
 | Seed duplicated users/roles | `prisma db seed` was run after restore. Do not seed. |

@@ -56,6 +56,11 @@ pids/
 *.seed
 *.pid.lock
 
+# Database dumps (prod → staging refresh)
+*.dump
+*.sql.gz
+backups/
+
 # Misc
 .turbo/
 .vercel/

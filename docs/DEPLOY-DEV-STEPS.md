@@ -197,7 +197,7 @@ If the dev server has **little free space or has crashed** due to accumulated Do
 ./infra/clean-dev-cache.sh
 ```
 
-This removes Docker **build cache** and **dangling images** and prints disk usage before/after. It does **not** remove your running containers or named volumes (postgres_data, redis_data, minio_data).
+This removes Docker **build cache** and **dangling images** and prints disk usage before/after. It does **not** remove your running containers or named volumes (`postgres_data`, `redis_data`).
 
 For a more aggressive cleanup (removes all unused images; next deploy will re-pull/rebuild):
 
