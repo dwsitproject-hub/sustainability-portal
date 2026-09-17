@@ -10,6 +10,10 @@
 #
 # Ports: DB host 5000, API host 8001. See env.example.backend for required variables.
 # Project name isolates volumes from dev on the same host.
+#
+# Database: default is local Docker Postgres. To use ApsaraDB, set DATABASE_URL (see
+# docs/MIGRATE-TO-APSARA-DB.md). After cutover, start only redis+api (`up -d redis api`);
+# a bare `up -d` starts the local postgres service again.
 
 name: slms-prod-backend
 
@@ -67,7 +71,9 @@ services:
       NODE_ENV: production
       PORT: 3001
       API_PREFIX: api/v1
-      DATABASE_URL: postgresql://${DB_USER:-slms}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-slms}?schema=public
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${DB_USER:-slms}:${DB_PASSWORD}@${DB_HOST:-postgres}:${DB_PORT:-5432}/${DB_NAME:-slms}?schema=public}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -86,7 +92,10 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-}
       WEB_URL: ${WEB_URL:-${CORS_ORIGIN:-}}
+      APP_BASE_URL: ${APP_BASE_URL:-${WEB_URL:-${CORS_ORIGIN:-}}}
       API_PUBLIC_BASE_URL: ${API_PUBLIC_BASE_URL:-}
       REGISTRATION_DOMAIN_RESTRICTION_ENABLED: ${REGISTRATION_DOMAIN_RESTRICTION_ENABLED:-true}
       FRONTEND_URL: ${FRONTEND_URL:-${WEB_URL:-${CORS_ORIGIN:-}}}
@@ -103,8 +112,6 @@ services:
     volumes:
       - ${STORAGE_HOST_PATH:-/mnt/nas/slms-docs}:/app/storage:rw
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:

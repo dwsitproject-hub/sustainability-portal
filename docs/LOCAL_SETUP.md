@@ -14,7 +14,7 @@ This guide gets the Sustainability Portal running on your machine for testing.
    pnpm db:generate
    pnpm dev:infra
    ```
-3. **Wait 20–30 seconds** for Postgres and MinIO to be ready.
+3. **Wait 20–30 seconds** for Postgres to be ready.
 4. Run migrations and seed:
 
    ```bash
@@ -36,7 +36,7 @@ To test changes: leave `pnpm dev` running; the Next.js app and API use hot reloa
 
 - **Node.js** >= 20
 - **pnpm** >= 8 (`npm install -g pnpm`)
-- **Docker Desktop** (PostgreSQL, Redis, MinIO, Mailhog run in Docker)
+- **Docker Desktop** (PostgreSQL, Redis, Mailhog run in Docker)
 
 ## One-time setup
 
@@ -66,14 +66,13 @@ This copies `apps/api/env.example` → `apps/api/.env` and `apps/web/env.example
 pnpm dev:infra
 ```
 
-This starts only **infra** services (Postgres, Redis, MinIO, Mailhog). API and Web are **not** started in Docker so you can run them locally with `pnpm dev`.
+This starts only **infra** services (Postgres, Redis, Mailhog). API and Web are **not** started in Docker so you can run them locally with `pnpm dev`. Document files use `STORAGE_ROOT_PATH` (local `./data/storage` or a NAS mount).
 
 - **PostgreSQL**: `localhost:5544` (user: `slms`, password: `slms`, db: `slms`)
 - **Redis**: `localhost:6379`
-- **MinIO API**: `http://localhost:9000` | Console: `http://localhost:9001` (minioadmin / minioadmin)
 - **Mailhog**: `http://localhost:8025` (SMTP: `localhost:1025`)
 
-Wait about **20–30 seconds** for Postgres and MinIO to be ready.
+Wait about **20–30 seconds** for Postgres to be ready.
 
 ### 4. Optional: Infra env for Docker Compose
 
@@ -192,7 +191,7 @@ pnpm dev
 | Command | Description |
 |--------|-------------|
 | `pnpm setup:env` | Copy API/Web env examples to `.env` / `.env.local` if missing |
-| `pnpm dev:infra` | Start only Postgres, Redis, MinIO, Mailhog (for local dev) |
+| `pnpm dev:infra` | Start only Postgres, Redis, Mailhog (for local dev) |
 | `pnpm dev:infra:full` | Start infra + API + Web in Docker |
 | `pnpm dev` | Run API + Web locally (expects infra already up) |
 | `pnpm setup` | install + build:shared + setup:env + dev:infra + wait + db:migrate + db:seed |

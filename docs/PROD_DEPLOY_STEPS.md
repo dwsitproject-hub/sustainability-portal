@@ -17,7 +17,7 @@ Use this checklist before deploying.
 
 | Item | Status | Notes |
 |------|--------|--------|
-| `infra/docker-compose.prod.backend.yml` | ✅ | Backend: Postgres (host 5000), Redis, MinIO, API on port **8001** |
+| `infra/docker-compose.prod.backend.yml` | ✅ | Backend: Postgres (host 5000), Redis, API on port **8001**; files on Synology mount |
 | `infra/docker-compose.prod.frontend.yml` | ✅ | Frontend: Next.js on port **8000** |
 | `infra/env.example.backend` | ✅ | Copy to `.env` on **backend** server |
 | `infra/env.example.frontend` | ✅ | Copy to `.env` on **frontend** server |
@@ -26,11 +26,12 @@ Use this checklist before deploying.
 
 | Variable | Required | Notes |
 |----------|----------|--------|
-| `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Yes | Postgres |
+| `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Yes | Local Docker Postgres (default) |
+| `DATABASE_URL` | If using ApsaraDB | Full URL including `sslmode` |
 | `REDIS_PASSWORD` | Yes | Redis auth |
 | `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ADMIN_SECRET` | Yes | Use strong values (e.g. `openssl rand -base64 64`) |
 | `CORS_ORIGIN` | Yes | Frontend origin, e.g. `http://FRONTEND_IP:8000` |
-| `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` | Yes | Use strong values in prod |
+| `STORAGE_HOST_PATH`, `STORAGE_ROOT_PATH` | Yes | Synology/NFS mount → `/app/storage` |
 | `POSTGRES_PORT` | Optional | Default 5000 |
 
 ### 1.3 Frontend env (env.example.frontend)
@@ -48,7 +49,6 @@ Use this checklist before deploying.
 | **8001** | API (NestJS) | Backend server | Open from **frontend server IP** only (or same host if single-server) |
 | 5000 | Postgres | Backend server | Optional; usually internal only |
 | 6379 | Redis | Backend server | Internal only |
-| 9000 / 9001 | MinIO | Backend server | Internal only |
 
 ### 1.5 Application behaviour
 
@@ -145,7 +145,7 @@ Edit these (replace placeholders with real values and your **frontend** server I
 - `JWT_REFRESH_SECRET=...` → strong secret
 - `JWT_ADMIN_SECRET=...` → strong secret
 - `CORS_ORIGIN=http://YOUR_FRONTEND_SERVER_IP:8000` → e.g. `http://192.168.1.10:8000`
-- `MINIO_ACCESS_KEY=...` and `MINIO_SECRET_KEY=...` → strong values
+- `STORAGE_HOST_PATH=/mnt/nas/slms-docs` and `STORAGE_ROOT_PATH=/app/storage`
 
 Save and exit (in nano: Ctrl+O, Enter, Ctrl+X).
 
@@ -338,7 +338,7 @@ If you run from inside `infra/`, the path must not include `infra/`:
 ```bash
 cd /path/to/sustainability-portal
 cp infra/env.example.backend infra/env.prod.backend
-# Edit infra/env.prod.backend (DB_*, REDIS_*, JWT_*, CORS_ORIGIN, MINIO_*)
+# Edit infra/env.prod.backend (DB_*, REDIS_*, JWT_*, CORS_ORIGIN, STORAGE_*)
 chmod +x infra/up-prod-backend.sh
 ./infra/up-prod-backend.sh up -d --build
 ./infra/up-prod-backend.sh logs api --tail 50
@@ -399,9 +399,9 @@ When you have a domain:
 
 | Problem | What to check |
 |--------|----------------|
-| **Connection timeout to DB** (pgAdmin/DBeaver) | Timeout = network/firewall, not wrong password. (1) On backend server: `docker compose -f infra/docker-compose.prod.backend.yml ps` — postgres must be Up. (2) Port: prod uses `POSTGRES_PORT` from backend `.env` (example: **5000**). (3) Firewall/security group must allow **your client IP** (where pgAdmin runs) to backend **TCP port 5000** (or 5432 if you didn’t set `POSTGRES_PORT`). (4) If you’re outside the VPC: use backend **public IP** and open that port for your IP, or use **SSH tunnel**: `ssh -L 5000:172.28.80.51:5000 user@<backend-public-ip>` then in pgAdmin use Host `localhost`, Port `5000`. |
-| API container exits | `docker compose -f infra/docker-compose.prod.backend.yml logs api`. Check `DATABASE_URL`, `REDIS_*`, `JWT_*`, `MINIO_*` in `infra/.env`. |
-| Migrations fail | `docker compose -f infra/docker-compose.prod.backend.yml exec api npx prisma migrate status`. Ensure Postgres is up and `DB_*` correct. |
+| **Connection timeout to DB** (pgAdmin/DBeaver) | Timeout = network/firewall, not wrong password. **Local Docker Postgres:** (1) `docker compose -f infra/docker-compose.prod.backend.yml ps` — postgres must be Up. (2) Port: `POSTGRES_PORT` (example: **5000**). (3) Security group must allow your client IP to that port. (4) Outside the VPC: SSH tunnel `ssh -L 5000:BACKEND_PRIVATE_IP:5000 user@<backend-public-ip>`. **ApsaraDB:** connect to the RDS internal/public endpoint; whitelist your IP. |
+| API container exits | `docker compose -f infra/docker-compose.prod.backend.yml logs api`. Check `DATABASE_URL` (or `DB_HOST` / `DB_*`), `REDIS_*`, `JWT_*` in the backend env file. |
+| Migrations fail | `docker compose -f infra/docker-compose.prod.backend.yml exec api npx prisma migrate status`. Ensure the target DB (local Postgres or ApsaraDB) is reachable and `DATABASE_URL` is correct. |
 | Frontend cannot reach API | From frontend server: `curl -s http://BACKEND_IP:8001/api/v1/health`. Open port 8001 from frontend to backend. |
 | Login does not redirect | Frontend must have `API_BACKEND_URL=http://BACKEND_IP:8001` so the login route and proxy work. Rebuild frontend after changing: `docker compose -f infra/docker-compose.prod.frontend.yml up -d --build`. |
 | CORS errors in browser | Backend `CORS_ORIGIN` must exactly match the URL in the address bar (e.g. `http://FRONTEND_IP:8000`). |

@@ -88,12 +88,12 @@ Recommendation: **Proceed to UAT** after completing the “Must-fix before UAT�
 | API | NestJS + Prisma | 3001 | Global prefix `api/v1`; JWT + refresh; admin JWT separate. |
 | Postgres | PostgreSQL 16 | 5544 (host) | From `infra/docker-compose.yml` when using Docker. |
 | Redis | Redis 7 | 6379 | Optional: set `REDIS_ENABLED=false` in API `.env` to run without Redis. |
-| MinIO | S3-compatible | 9000 (API), 9001 (console) | Document storage. |
+| Files | Filesystem / Synology | bind mount | `STORAGE_HOST_PATH` → `/app/storage`. |
 | Mailhog | SMTP capture | 1025 (SMTP), 8025 (UI) | For verification and reset emails in dev. |
 
 **Key user flows:** Register → verify email → login → home; Forgot password → email link → reset password; Compliance → Licenses (`/compliance/license`). Admin: `/admin/login` → admin flows (categories, documents, licenses, etc.).
 
-**Env:** API: `apps/api/.env` (required: `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ADMIN_SECRET`; optional: `REDIS_ENABLED=false`). Web: `apps/web/.env.local` (`NEXT_PUBLIC_API_URL`). Infra: `infra/.env` for Docker (Postgres, Redis, MinIO, etc.).
+**Env:** API: `apps/api/.env` (required: `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ADMIN_SECRET`; optional: `REDIS_ENABLED=false`). Web: `apps/web/.env.local` (`NEXT_PUBLIC_API_URL`). Infra: `infra/.env` for Docker (Postgres, Redis, `STORAGE_HOST_PATH`).
 
 ---
 

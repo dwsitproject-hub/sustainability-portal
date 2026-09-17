@@ -173,7 +173,7 @@ Copy the line it prints (e.g. `K7x...==`). Run it **three more times** so you ha
 1. `JWT_SECRET`
 2. `JWT_REFRESH_SECRET`
 3. `JWT_ADMIN_SECRET`
-4. (optional) one for `DB_PASSWORD`, one for `REDIS_PASSWORD`, one for `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY`, or generate more with the same command.
+4. (optional) one for `DB_PASSWORD`, one for `REDIS_PASSWORD`, or generate more with the same command.
 
 Example (run multiple times):
 
@@ -220,8 +220,8 @@ nano .env
    Example: `CORS_ORIGIN=http://192.168.1.10:8000`  
    No trailing slash.
 
-7. **MINIO_ACCESS_KEY** and **MINIO_SECRET_KEY**  
-   Replace with strong values (e.g. two more from `openssl rand -base64 48` or similar).
+7. **STORAGE_HOST_PATH** and **STORAGE_ROOT_PATH**  
+   Point at the Synology (or local) mount, e.g. `STORAGE_HOST_PATH=/mnt/nas/slms-docs` and `STORAGE_ROOT_PATH=/app/storage`.
 
 **Save and exit in nano:**
 
@@ -267,7 +267,7 @@ List containers:
 docker compose -f infra/docker-compose.prod.backend.yml ps
 ```
 
-**You should see:** All services “Up” (postgres, redis, minio, api; minio-init may show “Exit 0”).
+**You should see:** All services “Up” (postgres, redis, api). After ApsaraDB cutover, postgres may be stopped.
 
 View API logs:
 
@@ -482,7 +482,7 @@ git pull origin BRANCH
 cd infra
 cp env.example.backend .env
 nano .env
-# Edit: DB_PASSWORD, REDIS_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET, JWT_ADMIN_SECRET, CORS_ORIGIN (http://FRONTEND_IP:8000), MINIO_ACCESS_KEY, MINIO_SECRET_KEY. Save: Ctrl+O, Enter, Ctrl+X.
+# Edit: DB_PASSWORD, REDIS_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET, JWT_ADMIN_SECRET, CORS_ORIGIN (http://FRONTEND_IP:8000), STORAGE_HOST_PATH. Save: Ctrl+O, Enter, Ctrl+X.
 
 cd ~/sustainability-portal
 chmod +x infra/up-prod-backend.sh
@@ -522,7 +522,7 @@ docker compose -f infra/docker-compose.prod.frontend.yml logs web --tail 30
 | **“Permission denied (publickey)”** | Use password auth or load the correct .ppk in PuTTY (Connection → SSH → Auth). |
 | **`git: command not found`** | Install Git (see A2). |
 | **`docker: command not found`** | Install Docker (see A3); then log out and back in. |
-| **API container exits** | Run `docker compose -f infra/docker-compose.prod.backend.yml logs api` and fix the reported error (often wrong DB/REDIS/JWT/MINIO in `.env`). |
+| **API container exits** | Run `docker compose -f infra/docker-compose.prod.backend.yml logs api` and fix the reported error (often wrong DB/REDIS/JWT in `.env`). |
 | **`curl localhost:8001` connection refused** | Wait longer; API may still be starting or running migrations. Check `logs api` again. |
 | **Frontend build fails** | Ensure enough disk and memory. Run `./infra/up-prod-frontend.sh up -d --build web` (cached). If still failing, try `build --no-cache web` and read the last error lines. Run `./infra/clean-dev-cache.sh` if disk is full. |
 | **Browser: “This site can’t be reached”** | Open port 8000 on the frontend (B7) and confirm you use `http://FRONTEND_IP:8000`. |
